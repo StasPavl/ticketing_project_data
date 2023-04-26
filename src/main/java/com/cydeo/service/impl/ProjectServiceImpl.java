@@ -2,6 +2,7 @@ package com.cydeo.service.impl;
 
 import com.cydeo.dto.ProjectDTO;
 import com.cydeo.entity.Project;
+import com.cydeo.entity.User;
 import com.cydeo.enums.Status;
 import com.cydeo.mapper.ProjectMapper;
 import com.cydeo.repository.ProjectRepository;
@@ -32,11 +33,30 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public void update(ProjectDTO dto) {
 
+        Project project1 = projectRepository.findByProjectCode(dto.getProjectCode());//took user from db with id
+
+        Project convertedProject = projectMapper.convertToEntity(dto);//convert userDTo to entity
+
+        convertedProject.setId(project1.getId());//set id from ser in db to updated user
+
+        convertedProject.setProjectStatus(project1.getProjectStatus());
+
+        projectRepository.save(convertedProject); //save updated user to db with id
     }
 
     @Override
     public void delete(String code) {
 
+        Project project = projectRepository.findByProjectCode(code);
+        project.setIsDeleted(true);
+        projectRepository.save(project);
+    }
+
+    @Override
+    public void complete(ProjectDTO dto) {
+        Project project = projectRepository.findByProjectCode(dto.getProjectCode());
+        project.setProjectStatus(Status.COMPLETE);
+        projectRepository.save(project);
     }
 
     @Override
