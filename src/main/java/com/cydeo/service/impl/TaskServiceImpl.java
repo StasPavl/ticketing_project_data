@@ -2,12 +2,16 @@ package com.cydeo.service.impl;
 
 import com.cydeo.dto.ProjectDTO;
 import com.cydeo.dto.TaskDTO;
+import com.cydeo.dto.UserDTO;
 import com.cydeo.entity.Project;
 import com.cydeo.entity.Task;
 import com.cydeo.enums.Status;
+import com.cydeo.mapper.ProjectMapper;
 import com.cydeo.mapper.TaskMapper;
+import com.cydeo.mapper.UserMapper;
 import com.cydeo.repository.TaskRepository;
 import com.cydeo.service.TaskService;
+import com.cydeo.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,13 +22,20 @@ import java.util.stream.Collectors;
 @Service
 public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
+    private final ProjectMapper projectMapper;
+    private final UserService userService;
+    private final UserMapper userMapper;
 
-    public TaskServiceImpl(TaskRepository taskRepository, TaskMapper taskMapper) {
+
+    public TaskServiceImpl(TaskRepository taskRepository, TaskMapper taskMapper, ProjectMapper projectMapper, UserService userService, UserMapper userMapper) {
         this.taskRepository = taskRepository;
         this.taskMapper = taskMapper;
+        this.projectMapper = projectMapper;
+        this.userService = userService;
+        this.userMapper = userMapper;
     }
 
-    private final TaskMapper taskMapper;
     @Override
     public List<TaskDTO> listAllTasks() {
         List<Task> listTask = taskRepository.findAll();
@@ -45,7 +56,7 @@ public class TaskServiceImpl implements TaskService {
         Optional<Task> task = taskRepository.findById(dto.getId());
         Task convertedTask = taskMapper.convertToEntity(dto);
 
-        convertedTask.setTaskStatus(task.get().getTaskStatus());
+        convertedTask.setTaskStatus(dto.getTaskStatus() == null ? task.get().getTaskStatus() : dto.getTaskStatus());
         convertedTask.setAssignedDate(task.get().getAssignedDate());
         taskRepository.save(convertedTask);
 
@@ -84,28 +95,37 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskDTO> listOfAllNonCompletedTask() {
-        List<Task> tasks = taskRepository.allNonCompletedTask();
+    public List<TaskDTO> listAllTasksByStatusIsNot(Status status) {
+        UserDTO loggedInUser = userService.findByUserName("john@employee.com");
+        List<Task> tasks = taskRepository.findAllByTaskStatusIsNotAndAssignedEmployee(status,userMapper.convertToEntity(loggedInUser));
         return tasks.stream().map(taskMapper::convertToDto).collect(Collectors.toList());
     }
 
     @Override
-    public List<TaskDTO> listOfAllCompletedTask() {
-        List<Task> tasks = taskRepository.allCompletedTask();
+    public List<TaskDTO> listAllTasksByStatus(Status status)  {
+        UserDTO loggedInUser = userService.findByUserName("john@employee.com");
+
+        List<Task> tasks = taskRepository.findAllByTaskStatusAndAssignedEmployee(status,userMapper.convertToEntity(loggedInUser));
         return tasks.stream().map(taskMapper::convertToDto).collect(Collectors.toList());
     }
 
+
     @Override
-    public void updateStatus(TaskDTO dto) {
-        Optional<Task> task = taskRepository.findById(dto.getId());//finding task in db
-        Task convertedTask  = taskMapper.convertToEntity(dto);//converting to DTO
+    public void deleteByProject(ProjectDTO dto) {
+        Project project = projectMapper.convertToEntity(dto);
+        List<Task> tasks = taskRepository.findAllByProject(project);
+        tasks.forEach(task -> delete(task.getId()));
+    }
 
-        if(task.isPresent()){
-            convertedTask.setTaskStatus(dto.getTaskStatus() == null ? task.get().getTaskStatus() : dto.getTaskStatus());//if my task requst status null, my new dto task will
-            //same status as my task from db, if not null my new DTO task will get status from UI
-            convertedTask.setAssignedDate(task.get().getAssignedDate());//assign same date as my entity task
-            taskRepository.save(convertedTask);//saving my new taskDTO with new status and date
-        }
+    @Override
+    public void completeByProject(ProjectDTO dto) {
+        Project project = projectMapper.convertToEntity(dto);
+        List<Task> tasks = taskRepository.findAllByProject(project);
+        tasks.stream().map(taskMapper::convertToDto)
 
+                .forEach(taskDTO -> {
+                    taskDTO.setTaskStatus(Status.COMPLETE);
+                    update(taskDTO);
+                });
     }
 }

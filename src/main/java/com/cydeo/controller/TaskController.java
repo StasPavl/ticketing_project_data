@@ -118,13 +118,13 @@ public class TaskController {
 
     @GetMapping("/employee/pending-tasks")
     public String employeePendingTasks(Model model) {
-        model.addAttribute("tasks", taskService.listOfAllNonCompletedTask());
+        model.addAttribute("tasks", taskService.listAllTasksByStatusIsNot(Status.COMPLETE));
         return "/task/pending-tasks";
     }
 
     @GetMapping("/employee/archive")
     public String employeeArchivedTasks(Model model) {
-        model.addAttribute("tasks", taskService.listOfAllCompletedTask());
+        model.addAttribute("tasks", taskService.listAllTasksByStatus(Status.COMPLETE));
         return "/task/archive";
     }
 
@@ -132,10 +132,8 @@ public class TaskController {
     public String employeeEditTask(@PathVariable Long id, Model model) {
 
         model.addAttribute("task", taskService.getTaskByID(id));
-//        model.addAttribute("projects", projectService.findAll());
-//        model.addAttribute("employees", userService.findEmployees());
         model.addAttribute("statuses", Status.values());
-        model.addAttribute("tasks", taskService.listOfAllNonCompletedTask());
+        model.addAttribute("tasks", taskService.listAllTasksByStatusIsNot(Status.COMPLETE));
 
         return "/task/status-update";
 
@@ -147,13 +145,13 @@ public class TaskController {
         if (bindingResult.hasErrors()) {
 
             model.addAttribute("statuses", Status.values());
-            model.addAttribute("tasks", taskService.listOfAllNonCompletedTask());
+            model.addAttribute("tasks", taskService.listAllTasksByStatusIsNot(Status.COMPLETE));
 
             return "/task/status-update";
 
         }
 
-        taskService.updateStatus(task);
+        taskService.update(task);
 
         return "redirect:/task/employee/pending-tasks";
 
