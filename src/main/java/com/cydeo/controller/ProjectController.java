@@ -72,7 +72,7 @@ public class ProjectController {
 
     @GetMapping("/complete/{projectCode}")
     public String completeProject(@PathVariable("projectCode") String projectCode) {
-        projectService.complete(projectService.findByCode(projectCode));
+        projectService.complete(projectCode);
         return "redirect:/project/create";
     }
 
@@ -119,7 +119,7 @@ public class ProjectController {
 
     @GetMapping("/manager/complete/{projectCode}")
     public String managerCompleteProject(@PathVariable("projectCode") String projectCode) {
-        projectService.complete(projectService.findByCode(projectCode));
+        projectService.complete(projectCode);
         return "redirect:/project/manager/project-status";
     }
 

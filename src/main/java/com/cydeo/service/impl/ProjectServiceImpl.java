@@ -69,8 +69,8 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void complete(ProjectDTO dto) {
-        Project project = projectRepository.findByProjectCode(dto.getProjectCode());
+    public void complete(String code) {
+        Project project = projectRepository.findByProjectCode(code);
         project.setProjectStatus(Status.COMPLETE);
         projectRepository.save(project);
 
@@ -103,5 +103,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectDTO findByCode(String code) {
        return projectMapper.convertToDto( projectRepository.findByProjectCode(code));
+    }
+
+    @Override
+    public List<ProjectDTO> listAllNonCompletedByAssignedManager(UserDTO assignedManager) {
+        List<Project> projects = projectRepository
+                .findAllByProjectStatusIsNotAndAssignedManager(Status.COMPLETE,userMapper.convertToEntity(assignedManager));
+        return projects.stream()
+                .map(projectMapper::convertToDto)
+                .collect(Collectors.toList());
     }
 }
