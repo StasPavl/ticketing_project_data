@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDTO> listAllUsers() {
-        List<User> userList = userRepository.findAll(Sort.by("firstName"));
+        List<User> userList = userRepository.findAllByIsDeletedOrderByFirstNameDesc(false);
 
         return userList.stream()
                 .map(userMapper::convertToDto)
@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDTO update(UserDTO user) {
-        User user1 = userRepository.findByUserName(user.getUserName());//took user from db with id
+        User user1 = userRepository.findByUserNameAndIsDeleted(user.getUserName(),false);//took user from db with id
         User convertedUser = userMapper.convertToEntity(user);//convert userDTo to entity
         convertedUser.setId(user1.getId());//set id from ser in db to updated user
         userRepository.save(convertedUser); //save updated user to db with id
@@ -52,14 +52,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDTO> listAllByRoles(String role) {
-        List<User> users = userRepository.findByRoleDescriptionIgnoreCase(role);
+        List<User> users = userRepository.findByRoleDescriptionIgnoreCaseAndIsDeleted(role,false);
 
         return users.stream().map(userMapper::convertToDto).collect(Collectors.toList());
     }
 
     @Override
     public UserDTO findByUserName(String username) {
-        return userMapper.convertToDto(userRepository.findByUserName(username));
+        return userMapper.convertToDto(userRepository.findByUserNameAndIsDeleted(username,false));
     }
 
     @Override
@@ -71,9 +71,10 @@ public class UserServiceImpl implements UserService {
     @Override
 
     public void deleteByUserName(String username) {
-        User user = userRepository.findByUserName(username);
+        User user = userRepository.findByUserNameAndIsDeleted(username,false);
         if (checkIfUserCanBeDeleted(user)){
             user.setIsDeleted(true);
+            user.setUserName(user.getUserName() + "-" + user.getId());
             userRepository.save(user);
         }
     }
